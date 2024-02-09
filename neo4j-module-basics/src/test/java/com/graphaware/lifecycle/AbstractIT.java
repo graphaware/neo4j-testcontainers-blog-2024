@@ -1,0 +1,80 @@
+package com.graphaware.lifecycle;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Session;
+import org.testcontainers.containers.Neo4jContainer;
+
+import java.util.Collections;
+
+import static com.graphaware.Versions.NEO4J_VERSION;
+
+public abstract class AbstractIT {
+
+    static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>("neo4j:" + NEO4J_VERSION);
+
+    static{
+        neo4jContainer.start();
+    }
+
+    @BeforeEach
+    protected void setup() {
+        dropAll();
+        executeCypher(
+            """
+                CREATE (TheMatrix:Movie {title:'The Matrix', released:1999, tagline:'Welcome to the Real World'})
+                    CREATE (Keanu:Person {name:'Keanu Reeves', born:1964})
+                    CREATE (Carrie:Person {name:'Carrie-Anne Moss', born:1967})
+                    CREATE (Laurence:Person {name:'Laurence Fishburne', born:1961})
+                    CREATE (Hugo:Person {name:'Hugo Weaving', born:1960})
+                    CREATE (LillyW:Person {name:'Lilly Wachowski', born:1967})
+                    CREATE (LanaW:Person {name:'Lana Wachowski', born:1965})
+                    CREATE (JoelS:Person {name:'Joel Silver', born:1952})
+                    CREATE
+                    (Keanu)-[:ACTED_IN {roles:['Neo']}]->(TheMatrix),
+                    (Carrie)-[:ACTED_IN {roles:['Trinity']}]->(TheMatrix),
+                    (Laurence)-[:ACTED_IN {roles:['Morpheus']}]->(TheMatrix),
+                    (Hugo)-[:ACTED_IN {roles:['Agent Smith']}]->(TheMatrix),
+                    (LillyW)-[:DIRECTED]->(TheMatrix),
+                    (LanaW)-[:DIRECTED]->(TheMatrix),
+                    (JoelS)-[:PRODUCED]->(TheMatrix)
+
+
+                    CREATE (TheMatrixReloaded:Movie {title:'The Matrix Reloaded', released:2003, tagline:'Free your mind'})
+                    CREATE (Keanu)-[:ACTED_IN {roles:['Neo']}]->(TheMatrixReloaded),
+                    (Carrie)-[:ACTED_IN {roles:['Trinity']}]->(TheMatrixReloaded),
+                    (Laurence)-[:ACTED_IN {roles:['Morpheus']}]->(TheMatrixReloaded),
+                    (Hugo)-[:ACTED_IN {roles:['Agent Smith']}]->(TheMatrixReloaded),
+                    (LillyW)-[:DIRECTED]->(TheMatrixReloaded),
+                    (LanaW)-[:DIRECTED]->(TheMatrixReloaded),
+                    (JoelS)-[:PRODUCED]->(TheMatrixReloaded)
+
+                    CREATE (TheMatrixRevolutions:Movie {title:'The Matrix Revolutions', released:2003, tagline:'Everything that has a beginning has an end'})
+                    CREATE (Keanu)-[:ACTED_IN {roles:['Neo']}]->(TheMatrixRevolutions),
+                    (Carrie)-[:ACTED_IN {roles:['Trinity']}]->(TheMatrixRevolutions),
+                    (Laurence)-[:ACTED_IN {roles:['Morpheus']}]->(TheMatrixRevolutions),
+                    (Hugo)-[:ACTED_IN {roles:['Agent Smith']}]->(TheMatrixRevolutions),
+                    (LillyW)-[:DIRECTED]->(TheMatrixRevolutions),
+                    (LanaW)-[:DIRECTED]->(TheMatrixRevolutions),
+                    (JoelS)-[:PRODUCED]->(TheMatrixRevolutions)
+
+                    """
+
+        );
+    }
+
+    private void dropAll() {
+        executeCypher("MATCH (n) DETACH delete n");
+    }
+
+    private void executeCypher(String statement) {
+        try (Driver driver = GraphDatabase.driver(neo4jContainer.getBoltUrl(), AuthTokens.basic("neo4j", "password"));
+             Session session = driver.session()
+        ) {
+            driver.session().run(statement, Collections.emptyMap());
+        }
+    }
+
+}
